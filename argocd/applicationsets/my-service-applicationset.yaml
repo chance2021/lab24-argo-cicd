@@ -28,7 +28,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/your-org/your-gitops-repo.git
+        repoURL: https://github.com/chance2021/lab24-helm-deployment.git
         targetRevision: main
         path: apps/my-service/helm
         helm:
