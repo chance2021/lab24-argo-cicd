@@ -1,0 +1,87 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: git-build-push
+  namespace: cicd
+spec:
+  serviceAccountName: workflow-runner
+  arguments:
+    parameters:
+      - name: git-repo
+      - name: git-revision
+      - name: image-name     # e.g. ${GHCR_REPO}
+      - name: image-tag
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: build-image
+            template: build-image
+        - - name: update-values
+            template: update-values
+    - name: build-image
+      inputs:
+        parameters:
+          - name: git-repo
+          - name: git-revision
+          - name: image-name
+          - name: image-tag
+      container:
+        image: gcr.io/kaniko-project/executor:v1.16.0
+        args:
+          - "--context={{inputs.parameters.git-repo}}#{{inputs.parameters.git-revision}}"
+          - "--destination={{inputs.parameters.image-name}}:{{inputs.parameters.image-tag}}"
+          - "--dockerfile=apps/my-service/Dockerfile"
+          - "--snapshotMode=redo"
+          - "--cleanup"
+        volumeMounts:
+          - name: docker-config
+            mountPath: /kaniko/.docker
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: ghcr-creds
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+    - name: update-values
+      inputs:
+        parameters:
+          - name: git-repo
+          - name: git-revision
+          - name: image-name
+          - name: image-tag
+      script:
+        image: alpine:3.19
+        command: [sh]
+        source: |
+          set -euo pipefail
+          apk add --no-cache git yq
+          git clone "{{inputs.parameters.git-repo}}" repo
+          cd repo
+          git checkout "{{inputs.parameters.git-revision}}"
+          yq -i ".image.repository = \"{{inputs.parameters.image-name}}\"" apps/my-service/helm/values.yaml
+          yq -i ".image.tag = \"{{inputs.parameters.image-tag}}\"" apps/my-service/helm/values.yaml
+          git config user.name "${GIT_USERNAME}"
+          git config user.email "${GIT_EMAIL}"
+          git commit -am "chore: update rollout image to {{inputs.parameters.image-tag}}"
+          git remote set-url origin "https://${GIT_USERNAME}:${GIT_TOKEN}@${GIT_REMOTE}"
+          git push origin HEAD:main
+        env:
+          - name: GIT_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: username
+          - name: GIT_EMAIL
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: email
+          - name: GIT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: token
+          - name: GIT_REMOTE
+            value: ${GIT_REMOTE}

@@ -153,7 +153,7 @@ kubectl create secret generic github-webhook-secret \
 
 The template below uses Kaniko to build/push the container image straight from the Git repo and then patches `apps/my-service/helm/values.yaml` to reflect the new image tag before committing back to `main`.
 
-Save as `argo/workflow-template.yaml` and apply it (`kubectl apply -f argo/workflow-template.yaml`):
+Save as `argo/workflow-template.yaml` and apply it (`kubectl apply -f argo-workflows/workflow-template.yaml`):
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
