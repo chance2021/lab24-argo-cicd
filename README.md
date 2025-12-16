@@ -34,12 +34,24 @@ The Helm chart already ships with a canary Rollout (`apps/my-service/helm/templa
 - macOS/Linux shell with `kubectl`, `helm`, `minikube`, `docker` (or another container runtime), and `jq`.
 - `argo` CLI (`brew install argocd argo-rollouts` or see docs).
 - GitHub personal access token (PAT) with `repo`, `workflow`, and `write:packages` scopes.
-- GitHub Container Registry (GHCR) repository such as `ghcr.io/<your-user>/lab24-rollouts`.
+- GitHub Container Registry (GHCR) repository such as `${GHCR_REPO}`.
 - Permission to build and push the Smee relay image defined in `apps/smee-relay/Dockerfile` (publishing to GHCR keeps everything in one registry).
 - Fork of this repo so the workflow can push commits.
 
-> All commands assume the repo is cloned to `~/github/lab24-helm-deployment`, Minikube is the current kube-context, and you have network access to download controller manifests. Adjust paths and versions to your environment.
+> All commands assume the repo is cloned to `~/github/lab24-argo-cicd`, Minikube is the current kube-context, and you have network access to download controller manifests. Adjust paths and versions to your environment.
 
+### Helper environment variables
+
+Export the variables below once per shell so you do not have to edit every command:
+
+```bash
+export GITHUB_USER="<github-user>"
+export GITHUB_EMAIL="<user@example.com>"
+export GITHUB_TOKEN="<github-personal-access-token>"
+export GHCR_REPO="ghcr.io/${GITHUB_USER}/lab24-rollouts"
+export SMEE_RELAY_IMAGE="ghcr.io/${GITHUB_USER}/smee-relay:latest"
+export GIT_REMOTE="github.com/${GITHUB_USER}/lab24-argo-cicd.git"
+```
 ---
 
 ## 1. Boot Minikube and install the Argo controllers
@@ -114,24 +126,25 @@ EOF
 ### 2.2 Registry and Git secrets
 
 ```bash
-# Docker config for GHCR (replace <>)
+# Docker config for GHCR (fills pull secrets for Kaniko)
 kubectl create secret docker-registry ghcr-creds \
   --namespace cicd \
   --docker-server=ghcr.io \
-  --docker-username=<github-user> \
-  --docker-password=<github-personal-access-token>
+  --docker-username="$GITHUB_USER" \
+  --docker-password="$GITHUB_TOKEN"
 
 # Git identity for committing values.yaml changes
 kubectl create secret generic github-token \
   --namespace cicd \
-  --from-literal=username=<github-user> \
-  --from-literal=email=<user@example.com> \
-  --from-literal=token=<github-personal-access-token>
+  --from-literal=username="$GITHUB_USER" \
+  --from-literal=email="$GITHUB_EMAIL" \
+  --from-literal=token="$GITHUB_TOKEN"
 
-# Shared secret used by GitHub webhook + Argo Events
+# Shared secret used by GitHub webhook + Argo Events (generate once and reuse)
+WEBHOOK_SECRET=$(openssl rand -hex 32)
 kubectl create secret generic github-webhook-secret \
   --namespace argo-events \
-  --from-literal=token=<long-random-string>
+  --from-literal=token="$WEBHOOK_SECRET"
 ```
 
 ---
@@ -154,7 +167,7 @@ spec:
     parameters:
       - name: git-repo
       - name: git-revision
-      - name: image-name     # e.g. ghcr.io/<user>/lab24-rollouts
+      - name: image-name     # e.g. ${GHCR_REPO}
       - name: image-tag
   entrypoint: main
   templates:
@@ -229,10 +242,10 @@ spec:
                 name: github-token
                 key: token
           - name: GIT_REMOTE
-            value: github.com/<your-user>/lab24-helm-deployment.git
+            value: ${GIT_REMOTE}
 ```
 
-> The template assumes you always push to `main`. Use Workflow parameters if you need branch-specific behavior.
+> The template assumes you always push to `main`. Use Workflow parameters if you need branch-specific behavior. If you keep `${GHCR_REPO}` or `${GIT_REMOTE}` literal in the YAML, run `envsubst < argo/workflow-template.yaml.tmpl > argo/workflow-template.yaml` (or substitute manually) before applying so Kubernetes receives the concrete values.
 
 ---
 
@@ -252,12 +265,12 @@ The repo now includes `argo-events/event-source.yaml` and `argo-events/sensor.ya
        --namespace argo-events \
        --from-literal=url=https://smee.io/abc123
      ```
-3. Build and push the relay image (replace `ghcr.io/<your-user>/smee-relay:latest` with wherever you publish images):
+3. Build and push the relay image:
    ```bash
-   docker build -t ghcr.io/<your-user>/smee-relay:latest apps/smee-relay
-   docker push ghcr.io/<your-user>/smee-relay:latest
+   docker build -t "$SMEE_RELAY_IMAGE" apps/smee-relay
+   docker push "$SMEE_RELAY_IMAGE"
    ```
-4. Edit `argo-events/event-source.yaml` so the `smee-relay` container image matches the reference you just pushed (and adjust the secret name if needed). Update `argo-events/sensor.yaml` with your GHCR repo name for the workflow trigger arguments.
+4. Edit `argo-events/event-source.yaml` so the `smee-relay` container image matches `$SMEE_RELAY_IMAGE` (and adjust the secret name if needed). Update `argo-events/sensor.yaml` with your `$GHCR_REPO` value for the workflow trigger arguments.
 5. Apply the manifests:
    ```bash
    kubectl apply -f argo-events/event-source.yaml
