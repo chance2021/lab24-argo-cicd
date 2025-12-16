@@ -32,7 +32,8 @@ The Helm chart already ships with a canary Rollout (`apps/my-service/helm/templa
 ## Prerequisites
 
 - macOS/Linux shell with `kubectl`, `helm`, `minikube`, `docker` (or another container runtime), and `jq`.
-- `argo` CLI (`brew install argocd argo-rollouts` or see docs).
+- `argo` CLI (`brew install argo`; verify with `argo version`).
+- `kubectl argo rollouts` plugin (`brew install argoproj/tap/kubectl-argo-rollouts`; verify with `kubectl argo rollouts version`).
 - GitHub personal access token (PAT) with `repo`, `workflow`, and `write:packages` scopes.
 - GitHub Container Registry (GHCR) repository such as `${GHCR_REPO}`.
 - Permission to build and push the Smee relay image defined in `apps/smee-relay/Dockerfile` (publishing to GHCR keeps everything in one registry).
@@ -76,7 +77,11 @@ kubectl apply -n argo-events -f https://github.com/argoproj/argo-events/releases
 kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
 ```
 
-> Tip: install the `kubectl argo rollouts` plugin so you can inspect rollout status easily.
+> Tip: install the `kubectl argo rollouts` plugin so you can inspect rollout status easily:
+> ```bash
+> brew install argoproj/tap/kubectl-argo-rollouts
+> kubectl argo rollouts version
+> ```
 
 ---
 
@@ -304,9 +309,9 @@ Argo CD now renders the ApplicationSet, which creates one Application per enviro
    argo -n cicd get <workflow-name>
    ```
 3. When the workflow finishes, Argo CD detects the changed `values.yaml` (new `image.tag`) and performs an automated sync.
-4. Watch the rollout:
+4. Watch the rollout (ApplicationSet renders rollouts named `my-service-<env>-hello-world`):
    ```bash
-   kubectl argo rollouts get rollout my-service-dev -n my-service-dev --watch
+   kubectl argo rollouts get rollout my-service-dev-hello-world -n my-service-dev --watch
    ```
 5. Port-forward to the service to see the HTML page served by the updated image.
 
@@ -337,7 +342,7 @@ minikube delete
    ```
 3. After the workflow completes, confirm Argo CD synced the change and that the Rollout in Minikube switched to the freshly built image:
    ```bash
-   kubectl argo rollouts get rollout my-service-dev -n my-service-dev --watch
+   kubectl argo rollouts get rollout my-service-dev-hello-world -n my-service-dev --watch
    ```
 4. Port-forward the service (`kubectl -n my-service-dev port-forward svc/my-service 8080:80`) and browse `http://localhost:8080` to see the updated page being served from the new container image.
 
