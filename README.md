@@ -192,13 +192,6 @@ metadata:
   namespace: cicd
 spec:
   serviceAccountName: workflow-runner
-  arguments:
-    parameters:
-      - name: git-repo
-      - name: git-revision
-      - name: git-before
-      - name: image-name     # e.g. ${GHCR_REPO}
-      - name: image-tag
   entrypoint: main
   templates:
     - name: main
@@ -228,21 +221,14 @@ spec:
       script:
         image: alpine:3.19
         command: [sh]
-        env:
-          - name: GIT_REPO
-            value: "{{inputs.parameters.git-repo}}"
-          - name: GIT_REVISION
-            value: "{{inputs.parameters.git-revision}}"
-          - name: GIT_BEFORE
-            value: "{{inputs.parameters.git-before}}"
         source: |
           set -euo pipefail
           apk add --no-cache git
-          git clone "$GIT_REPO" repo >&2
+          git clone "{{inputs.parameters.git-repo}}" repo >&2
           cd repo
           ZERO_SHA="0000000000000000000000000000000000000000"
-          TARGET="$(printf %s \"$GIT_REVISION\" | tr -d '\r')"
-          BEFORE="$(printf %s \"$GIT_BEFORE\" | tr -d '\r')"
+          TARGET="$(printf %s \"{{inputs.parameters.git-revision}}\" | tr -d '\r')"
+          BEFORE="$(printf %s \"{{inputs.parameters.git-before}}\" | tr -d '\r')"
           git fetch origin --tags >&2 || true
           if [ -z "$TARGET" ] || [ "$TARGET" = "$ZERO_SHA" ]; then
             TARGET="$(git rev-parse origin/HEAD)"
