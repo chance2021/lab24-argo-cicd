@@ -55,7 +55,7 @@ spec:
           dest: spec.arguments.parameters.1.value
         - src:
             dependencyName: push
-            value: ghcr.io/<your-user>/lab24-rollouts
+            value: ghcr.io/chance2021/lab24-argo-cicd
           dest: spec.arguments.parameters.2.value
         - src:
             dependencyName: push
