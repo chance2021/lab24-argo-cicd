@@ -16,6 +16,8 @@ spec:
             type: string
             value:
               - push
+        exprLogical:
+          - expr: "body.head_commit.author.email != 'workflow@example.com'"
   triggers:
     - template:
         name: run-workflow
