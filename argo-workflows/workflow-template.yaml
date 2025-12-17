@@ -160,4 +160,4 @@ spec:
                 name: github-token
                 key: token
           - name: GIT_REMOTE
-            value: ${GIT_REMOTE}
+            value: ${GIT_REMOTE} 
