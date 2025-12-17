@@ -254,10 +254,8 @@ spec:
           yq -i ".image.repository = \"{{inputs.parameters.image-name}}\"" apps/my-service/helm/values.yaml
           yq -i ".image.tag = \"{{inputs.parameters.image-tag}}\"" apps/my-service/helm/values.yaml
           # Ensure git identity is always set even if secrets are blank
-          GIT_NAME="${GITHUB_USER:-workflow-bot}"
-          GIT_MAIL="${GITHUB_EMAIL:-workflow@example.com}"
-          git config user.name "${GIT_NAME}"
-          git config user.email "${GIT_MAIL}"
+          git config user.name "${GITHUB_USER}"
+          git config user.email "${GITHUB_EMAIL}"
           git commit -am "chore: update rollout image to {{inputs.parameters.image-tag}}"
           git remote set-url origin "https://${GITHUB_USER}:${GITHUB_TOKEN}@${GIT_REMOTE}"
           git push origin HEAD:main
