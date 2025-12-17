@@ -67,3 +67,4 @@ spec:
                 dependencyName: push
                 dataTemplate: "{{ substr 0 12 .Input.body.after }}"
               dest: spec.arguments.parameters.4.value
+              
