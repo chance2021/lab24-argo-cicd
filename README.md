@@ -169,10 +169,11 @@ This grants the `argo-workflow-controller` service account (used by the controll
 
 The template below uses Kaniko to build/push the container image straight from the Git repo and then patches `apps/my-service/helm/values.yaml` to reflect the new image tag before committing back to `main`.
 
-Save as `argo/workflow-template.yaml` and apply it. If you kept shell-style placeholders such as `${GIT_REMOTE}` in the manifest, render them first with `envsubst`:
+Save as `argo/workflow-template.yaml` and apply it. If you kept shell-style placeholders such as `${GIT_REMOTE}` in the manifest, render them first with `envsubst`. Write the rendered output to a temp location (e.g. `/tmp`) so you never commit secrets back into the repo:
 
 ```bash
-envsubst < argo-workflows/workflow-template.yaml | kubectl apply -f -
+envsubst < argo-workflows/workflow-template.yaml > /tmp/workflow-template.yaml
+kubectl apply -f /tmp/workflow-template.yaml
 ```
 
 Otherwise, you can apply the file directly:
