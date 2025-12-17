@@ -68,6 +68,8 @@ spec:
           cd repo
           TARGET="{{inputs.parameters.git-revision}}"
           BEFORE="{{inputs.parameters.git-before}}"
+          echo "Target commit: $TARGET"
+          echo "Before commit: $BEFORE"
           ZERO_SHA="0000000000000000000000000000000000000000"
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "$ZERO_SHA" ]; then
             if git rev-parse "${TARGET}^" >/dev/null 2>&1; then
