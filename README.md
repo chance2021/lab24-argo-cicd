@@ -209,9 +209,9 @@ spec:
       container:
         image: gcr.io/kaniko-project/executor:v1.16.0
         args:
-          - "--context=dir:///workspace/src"
+          - "--context=dir:///workspace/src/apps/my-service"
           - "--destination={{inputs.parameters.image-name}}:{{inputs.parameters.image-tag}}"
-          - "--dockerfile=apps/my-service/Dockerfile"
+          - "--dockerfile=Dockerfile"
           - "--snapshotMode=redo"
           - "--cleanup"
         volumeMounts:
