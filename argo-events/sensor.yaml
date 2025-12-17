@@ -17,7 +17,7 @@ spec:
             value:
               - push
         exprLogical:
-          - expr: "body.head_commit.author.email != 'workflow@example.com'"
+          - expr: "not contains(body.head_commit.message, \"[workflow]\")"
   triggers:
     - template:
         name: run-workflow
