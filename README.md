@@ -19,7 +19,7 @@ GitHub push → Smee webhook relay → Argo EventSource → Sensor → Argo Work
 | Path | Description |
 | --- | --- |
 | `apps/my-service/Dockerfile` | Minimal NGINX-based image that serves `app/index.html`. |
-| `apps/my-service/helm/` | Helm chart that renders an `argoproj.io/v1alpha1` Rollout plus Service. |
+| `apps/my-service/helm/` | Helm chart that renders an `argoproj.io/v1alpha1` Rollout plus Service (and optionally a `smee-relay` sidecar via `.Values.smeeRelay`). |
 | `argocd/` | Root Application and ApplicationSet manifests for Argo CD. |
 | `argo-events/event-source.yaml` | GitHub webhook EventSource with an embedded Smee relay sidecar. |
 | `argo-events/sensor.yaml` | Sensor that triggers the workflow template from push events. |
@@ -256,7 +256,7 @@ spec:
 
 ## 4. Configure Argo Events + in-cluster Smee relay
 
-The repo now includes `argo-events/event-source.yaml` and `argo-events/sensor.yaml`. The EventSource uses `podSpecPatch` to run a Smee relay sidecar (built from `apps/smee-relay/Dockerfile`) that forwards GitHub webhooks directly to the webhook service—no manual port-forwarding required.
+The repo now includes `argo-events/event-source.yaml` and `argo-events/sensor.yaml`. Pair these with the lightweight Smee relay image under `apps/smee-relay/` (run it wherever you like) so GitHub webhook traffic is forwarded into the EventSource service—no manual port-forwarding required.
 
 1. Browse to [https://smee.io](https://smee.io) and click **Start a new channel**. Copy the unique HTTPS URL (e.g. `https://smee.io/abc123`).
 2. In your GitHub fork open **Settings → Webhooks** and add a webhook:
@@ -284,6 +284,10 @@ The repo now includes `argo-events/event-source.yaml` and `argo-events/sensor.ya
    ```
 
 > The Smee sidecar reads the channel URL from the `smee-relay-url` secret and proxies to `http://127.0.0.1:12000/payload`, which is the webhook listener running in the same pod. If you change the EventSource port or endpoint, update the `SMEE_TARGET` env var in `apps/smee-relay/Dockerfile` accordingly. Update `serviceAccountName` in the manifests if you already have dedicated accounts inside `argo-events`, and tweak the Sprig `substr` call in the sensor if you prefer full commit SHAs.
+
+### Optional: embed the relay in the sample workload
+
+If you want to co-locate the Smee relay with the sample `my-service` pods (purely for lab/demo purposes), set `.Values.smeeRelay.enabled: true` in the appropriate values file (or pass it via your ApplicationSet parameters). Provide either `smeeRelay.env.smeeUrl` (literal URL) or `smeeRelay.env.smeeUrlSecret` (name/key of a secret that contains the URL in the target namespace) plus `smeeRelay.env.target`. The Helm template will append the `smee-relay` container to the Rollout pod template so you can observe a multi-container rollout.
 
 ---
 
@@ -314,6 +318,7 @@ Argo CD now renders the ApplicationSet, which creates one Application per enviro
    kubectl argo rollouts get rollout my-service-dev-hello-world -n my-service-dev --watch
    ```
 5. Port-forward to the service to see the HTML page served by the updated image.
+   The landing page includes a `Current version` banner plus a reminder to edit `apps/my-service/app/index.html`—change that text, push to GitHub, and watch a new rollout happen end-to-end.
 
 If anything fails, inspect the workflow pod logs (`argo -n cicd logs -w <workflow-name> -s build-image`), and double-check that your secrets and template parameters match your fork and GHCR repository.
 
@@ -345,6 +350,7 @@ minikube delete
    kubectl argo rollouts get rollout my-service-dev-hello-world -n my-service-dev --watch
    ```
 4. Port-forward the service (`kubectl -n my-service-dev port-forward svc/my-service 8080:80`) and browse `http://localhost:8080` to see the updated page being served from the new container image.
+   The page shows the current version string; when your change deploys you’ll see the new text immediately.
 
 This verification round-trip proves the webhook, EventSource, Workflow, Argo CD, and Rollout all work together to deploy new code onto Minikube automatically.
 
