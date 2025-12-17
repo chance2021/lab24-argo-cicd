@@ -219,7 +219,7 @@ spec:
         - - name: update-values
             template: update-values
             when: "{{steps.detect-changes-step.outputs.parameters.should-build}} == 'true'"
-    - name: detect-changes
+    - name: detect-changes-step
       inputs:
         parameters:
           - name: git-repo

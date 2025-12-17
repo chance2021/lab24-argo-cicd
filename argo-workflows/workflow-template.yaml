@@ -52,7 +52,7 @@ spec:
                 - name: image-tag
                   value: "{{workflow.parameters.image-tag}}"
             when: "{{steps.detect-changes-step.outputs.parameters.should-build}} == 'true'"
-    - name: detect-changes
+    - name: detect-changes-step
       inputs:
         parameters:
           - name: git-repo
