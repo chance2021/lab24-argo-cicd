@@ -16,8 +16,8 @@ spec:
   templates:
     - name: main
       steps:
-        - - name: detect_changes
-            template: detect_changes
+        - - name: detectchanges
+            template: detect-changes
             arguments:
               parameters:
                 - name: git-repo
@@ -38,7 +38,7 @@ spec:
                   value: "{{workflow.parameters.image-name}}"
                 - name: image-tag
                   value: "{{workflow.parameters.image-tag}}"
-            when: "{{steps.detect_changes.outputs.parameters.should-build}} == 'true'"
+            when: "{{steps.detectchanges.outputs.parameters.should-build}} == 'true'"
         - - name: update-values
             template: update-values
             arguments:
@@ -51,8 +51,8 @@ spec:
                   value: "{{workflow.parameters.image-name}}"
                 - name: image-tag
                   value: "{{workflow.parameters.image-tag}}"
-            when: "{{steps.detect_changes.outputs.parameters.should-build}} == 'true'"
-    - name: detect_changes
+            when: "{{steps.detectchanges.outputs.parameters.should-build}} == 'true'"
+    - name: detect-changes
       inputs:
         parameters:
           - name: git-repo
