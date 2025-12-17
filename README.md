@@ -233,8 +233,8 @@ spec:
           apk add --no-cache git
           git clone "{{inputs.parameters.git-repo}}" repo
           cd repo
-          TARGET="{{inputs.parameters.git-revision}}"
-          BEFORE="{{inputs.parameters.git-before}}"
+          TARGET="$(echo "{{inputs.parameters.git-revision}}" | tr -d '\r')"
+          BEFORE="$(echo "{{inputs.parameters.git-before}}" | tr -d '\r')"
           ZERO_SHA="0000000000000000000000000000000000000000"
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "$ZERO_SHA" ]; then
             if git rev-parse "${TARGET}^" >/dev/null 2>&1; then

@@ -67,8 +67,8 @@ spec:
           echo "Cloning repo {{inputs.parameters.git-repo}}"
           git clone "{{inputs.parameters.git-repo}}" repo
           cd repo
-          TARGET="{{inputs.parameters.git-revision}}"
-          BEFORE="{{inputs.parameters.git-before}}"
+          TARGET="$(echo "{{inputs.parameters.git-revision}}" | tr -d '\r')"
+          BEFORE="$(echo "{{inputs.parameters.git-before}}" | tr -d '\r')"
           echo "Target commit: $TARGET"
           echo "Before commit: $BEFORE"
           ZERO_SHA="0000000000000000000000000000000000000000"
