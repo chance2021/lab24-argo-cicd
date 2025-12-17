@@ -38,7 +38,7 @@ spec:
           imagePullPolicy: {{ .Values.smeeRelay.image.pullPolicy }}
 {{- with .Values.smeeRelay.env }}
           env:
-{{- if .smeeUrlSecret }}
+{{- if and .smeeUrlSecret .smeeUrlSecret.name .smeeUrlSecret.key }}
             - name: SMEE_URL
               valueFrom:
                 secretKeyRef:
