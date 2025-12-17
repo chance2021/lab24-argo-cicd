@@ -112,7 +112,7 @@ rules:
     resources: [pods, pods/log, pods/exec, persistentvolumeclaims, configmaps, secrets]
     verbs: [create, update, patch, delete, get, list, watch]
   - apiGroups: ["argoproj.io"]
-    resources: [workflows, workflowtemplates, clusterworkflowtemplates]
+    resources: [workflows, workflowtemplates, clusterworkflowtemplates, workflowtaskresults]
     verbs: [create, update, patch, delete, get, list, watch]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
