@@ -2,7 +2,7 @@ replicaCount: 2
 image:
   repository: ghcr.io/chance2021/lab24-argo-cicd
   pullPolicy: IfNotPresent
-  tag: "58a105a2f082"
+  tag: "20e2097b1be9"
 nameOverride: ""
 fullnameOverride: ""
 serviceAccount:
