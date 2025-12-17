@@ -236,6 +236,13 @@ spec:
           TARGET="$(printf %s "{{inputs.parameters.git-revision}}" | tr -d '\r')"
           BEFORE="$(printf %s "{{inputs.parameters.git-before}}" | tr -d '\r')"
           ZERO_SHA="0000000000000000000000000000000000000000"
+          git fetch origin --tags >&2 || true
+          if [ -z "$TARGET" ] || [ "$TARGET" = "$ZERO_SHA" ]; then
+            TARGET="$(git rev-parse origin/HEAD)"
+          else
+            git fetch origin "$TARGET" >&2 || true
+          fi
+          git checkout "$TARGET" >&2 || true
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "$ZERO_SHA" ]; then
             if git rev-parse "${TARGET}^" >/dev/null 2>&1; then
               BEFORE="$(git rev-parse "${TARGET}^")"
