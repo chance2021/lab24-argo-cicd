@@ -37,27 +37,27 @@ spec:
                 arguments:
                   parameters:
                     - name: git-repo
-                      value: ""
+                      value: https://github.com/chance2021/lab24-argo-cicd.git
                     - name: git-revision
                       value: ""
                     - name: image-name
-                      value: ""
+                      value: ghcr.io/chance2021/lab24-argo-cicd
                     - name: image-tag
                       value: ""
-      parameters:
-        - src:
-            dependencyName: push
-            dataTemplate: "https://github.com/chance2021/lab24-argo-cicd.git"
-          dest: spec.arguments.parameters.0.value
-        - src:
-            dependencyName: push
-            dataKey: body.after
-          dest: spec.arguments.parameters.1.value
-        - src:
-            dependencyName: push
-            value: ghcr.io/chance2021/lab24-argo-cicd
-          dest: spec.arguments.parameters.2.value
-        - src:
-            dependencyName: push
-            dataTemplate: "{{ substr 0 12 .Input.body.after }}"
-          dest: spec.arguments.parameters.3.value
+          parameters:
+            - src:
+                dependencyName: push
+                dataKey: body.repository.clone_url
+              dest: spec.arguments.parameters.0.value
+            - src:
+                dependencyName: push
+                dataKey: body.after
+              dest: spec.arguments.parameters.1.value
+            - src:
+                dependencyName: push
+                value: ghcr.io/chance2021/lab24-argo-cicd
+              dest: spec.arguments.parameters.2.value
+            - src:
+                dependencyName: push
+                dataTemplate: "{{ substr 0 12 .Input.body.after }}"
+              dest: spec.arguments.parameters.3.value
