@@ -64,6 +64,7 @@ spec:
         source: |
           set -euo pipefail
           apk add --no-cache git
+          echo "Cloning repo {{inputs.parameters.git-repo}}"
           git clone "{{inputs.parameters.git-repo}}" repo
           cd repo
           TARGET="{{inputs.parameters.git-revision}}"

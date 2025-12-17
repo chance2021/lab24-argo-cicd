@@ -155,7 +155,7 @@ kubectl create secret generic github-webhook-secret \
   --from-literal=token="$WEBHOOK_SECRET"
 ```
 
-> Keep the Git automation email at `workflow@example.com` so the sensor can identify workflow-authored commits and ignore them. The workflow still labels its commits with a `[workflow]` prefix, but the change-detection guard now runs inside the workflow itself by diffing `apps/my-service/app/`.
+> Keep the Git automation email at `workflow@example.com` so workflow-authored commits are easy to recognize (and can be filtered later if you choose). The workflow still labels its commits with a `[workflow]` prefix, but change detection happens inside the workflow by diffing `apps/my-service/app/`.
 
 ### 2.3 Allow the Argo Workflows controller to operate in `cicd`
 
@@ -371,7 +371,7 @@ The repo now includes `argo-events/event-source.yaml`, `argo-events/smee-relay-d
 
 > The Smee relay deployment reads the channel URL from the `smee-relay-url` secret and proxies to `http://github-webhook-eventsource.argo-events.svc.cluster.local:12000/payload`, which is the EventSource service inside the cluster. If you change the EventSource port or endpoint, update the `SMEE_TARGET` env var in `apps/smee-relay/Dockerfile` and `argo-events/smee-relay-deployment.yaml` accordingly. Update `serviceAccountName` in the manifests if you already have dedicated accounts inside `argo-events`, and tweak the Sprig `substr` call in the sensor if you prefer full commit SHAs.
 >
-> The sensor includes a CEL `expr` that ignores pushes authored by the workflow bot (`workflow@example.com`). Actual change detection happens inside the workflow: the new `detect-changes` step diffs the previous commit against the current one and short-circuits the build if nothing under `apps/my-service/app/` changed. Update `argo-events/sensor.yaml` and the workflow template together if you rename the automation identity or want to watch different paths.
+> The sensor now forwards every GitHub push; the workflow decides whether to proceed via the `detect-changes` step (it diffs the previous commit against the current one and short-circuits the build if `apps/my-service/app/` didn’t change). Update `argo-events/sensor.yaml` and the workflow template together if you want different filtering behavior.
 
 ---
 
@@ -456,7 +456,7 @@ This verification round-trip proves the webhook, EventSource, Workflow, Argo CD,
 
 - **Workflow cannot push to GHCR**: re-create `ghcr-creds` secret; confirm PAT has `write:packages`. Use `kubectl get secret ghcr-creds -n cicd -o yaml` to verify base64 data exists.
 - **Workflow fails to push to GitHub**: ensure `github-token` secret contains `username`, `email`, and `token` keys. Token must allow `repo` scope.
-- **Workflow keeps recreating**: if the sensor triggers on every push (including the workflow’s own `update-values` commit), ensure `argo-events/sensor.yaml` filters out the workflow bot email (`workflow@example.com`). The workflow itself now checks for changes under `apps/my-service/app/`, so update the `detect-changes` step if you need different paths or if you rename the bot identity.
+- **Workflow keeps recreating**: the sensor now forwards every push, so expect a lightweight workflow to run for automation commits too (it exits before `build-image` because the diff has no app changes). If you want to drop these entirely, add a filter back in `argo-events/sensor.yaml` (e.g., ignore `workflow@example.com`) or adjust the `detect-changes` step.
 - **Workflow fails to build context**: confirm the git artifact is mounted and the Kaniko context points to the service directory (`dir:///workspace/src/apps/my-service`). See `argo-workflows/workflow-template.yaml`.
 - **Workflow cannot create workflowtaskresults**: verify the `workflow-runner` Role in `cicd` includes the `workflowtaskresults` resource under the `argoproj.io` API group.
 - **Sensor does not trigger**: check `kubectl -n argo-events get eventsources,sensors,pods`. Describe the sensor to see last event.
