@@ -276,7 +276,7 @@ The repo now includes `argo-events/event-source.yaml` and `argo-events/sensor.ya
    docker build -t "$SMEE_RELAY_IMAGE" apps/smee-relay
    docker push "$SMEE_RELAY_IMAGE"
    ```
-   > Use `SMEE_RELAY_IMAGE=ghcr.io/${GITHUB_USER}/smee-relay:latest` so the Rollout sidecar and/or EventSource refer to the same artifact.
+   > Publish the repository (e.g., `ghcr.io/chance2021/smee-relay:latest`) as **public** in GitHub Packages so your cluster can pull it without extra credentials and your local builds can `docker pull` it for verification.
 4. Edit `argo-events/event-source.yaml` so the `smee-relay` container image matches `$SMEE_RELAY_IMAGE` (and adjust the secret name if needed). Update `argo-events/sensor.yaml` with your `$GHCR_REPO` value for the workflow trigger arguments.
 5. Apply the manifests (including the default EventBus the EventSource references):
    ```bash
@@ -319,6 +319,10 @@ Argo CD now renders the ApplicationSet, which creates one Application per enviro
    ```bash
    kubectl argo rollouts get rollout my-service-dev-hello-world -n my-service-dev --watch
    ```
+   When the rollout pauses (due to the canary steps), approve the promotion to continue:
+   ```bash
+   kubectl argo rollouts promote my-service-dev-hello-world -n my-service-dev
+   ```
 5. Port-forward to the service to see the HTML page served by the updated image.
    The landing page includes a `Current version` banner plus a reminder to edit `apps/my-service/app/index.html`—change that text, push to GitHub, and watch a new rollout happen end-to-end.
 
@@ -350,6 +354,10 @@ minikube delete
 3. After the workflow completes, confirm Argo CD synced the change and that the Rollout in Minikube switched to the freshly built image:
    ```bash
    kubectl argo rollouts get rollout my-service-dev-hello-world -n my-service-dev --watch
+   ```
+   Approve the rollout when it pauses per the canary steps:
+   ```bash
+   kubectl argo rollouts promote my-service-dev-hello-world -n my-service-dev
    ```
 4. Port-forward the service (`kubectl -n my-service-dev port-forward svc/my-service 8080:80`) and browse `http://localhost:8080` to see the updated page being served from the new container image.
    The page shows the current version string; when your change deploys you’ll see the new text immediately.
