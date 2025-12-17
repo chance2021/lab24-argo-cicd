@@ -200,10 +200,16 @@ spec:
           - name: git-revision
           - name: image-name
           - name: image-tag
+        artifacts:
+          - name: source
+            path: /workspace/src
+            git:
+              repo: "{{inputs.parameters.git-repo}}"
+              revision: "{{inputs.parameters.git-revision}}"
       container:
         image: gcr.io/kaniko-project/executor:v1.16.0
         args:
-          - "--context={{inputs.parameters.git-repo}}#{{inputs.parameters.git-revision}}"
+          - "--context=dir:///workspace/src"
           - "--destination={{inputs.parameters.image-name}}:{{inputs.parameters.image-tag}}"
           - "--dockerfile=apps/my-service/Dockerfile"
           - "--snapshotMode=redo"
