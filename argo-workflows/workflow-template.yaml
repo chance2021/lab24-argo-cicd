@@ -73,13 +73,17 @@ spec:
             if git rev-parse "${TARGET}^" >/dev/null 2>&1; then
               BEFORE="$(git rev-parse \"${TARGET}^\")"
             else
+              echo "No prior commit found, forcing build"
               echo -n true > /tmp/should-build
               exit 0
             fi
           fi
+          echo git diff --name-only "$BEFORE" "$TARGET"
           if git diff --name-only "$BEFORE" "$TARGET" -- apps/my-service/app | grep -q .; then
+            echo "Changes detected in apps/my-service/app, proceeding with build."
             echo -n true > /tmp/should-build
           else
+            echo "No changes detected in apps/my-service/app, skipping build."
             echo -n false > /tmp/should-build
           fi
         outputs:
