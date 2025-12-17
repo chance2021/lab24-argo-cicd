@@ -16,6 +16,6 @@ spec:
       port: "12000"
       method: POST
       endpoint: /payload
-      authSecret:
-        name: github-webhook-secret
-        key: token
+      # authSecret:
+      #   name: github-webhook-secret
+      #   key: token
