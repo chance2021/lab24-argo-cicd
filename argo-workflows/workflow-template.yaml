@@ -16,7 +16,7 @@ spec:
   templates:
     - name: main
       steps:
-        - - name: detectchanges
+        - - name: detect-changes-step
             template: detect-changes
             arguments:
               parameters:
@@ -38,7 +38,7 @@ spec:
                   value: "{{workflow.parameters.image-name}}"
                 - name: image-tag
                   value: "{{workflow.parameters.image-tag}}"
-            when: "{{steps.detectchanges.outputs.parameters.should-build}} == 'true'"
+            when: "{{steps.detect-changes-step.outputs.parameters.should-build}} == 'true'"
         - - name: update-values
             template: update-values
             arguments:
@@ -51,7 +51,7 @@ spec:
                   value: "{{workflow.parameters.image-name}}"
                 - name: image-tag
                   value: "{{workflow.parameters.image-tag}}"
-            when: "{{steps.detectchanges.outputs.parameters.should-build}} == 'true'"
+            when: "{{steps.detect-changes-step.outputs.parameters.should-build}} == 'true'"
     - name: detect-changes
       inputs:
         parameters:

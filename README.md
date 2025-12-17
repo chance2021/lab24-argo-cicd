@@ -203,7 +203,7 @@ spec:
   templates:
     - name: main
       steps:
-        - - name: detectchanges
+        - - name: detect-changes-step
             template: detect-changes
             arguments:
               parameters:
@@ -215,10 +215,10 @@ spec:
                   value: "{{workflow.parameters.git-before}}"
         - - name: build-image
             template: build-image
-            when: "{{steps.detectchanges.outputs.parameters.should-build}} == 'true'"
+            when: "{{steps.detect-changes-step.outputs.parameters.should-build}} == 'true'"
         - - name: update-values
             template: update-values
-            when: "{{steps.detectchanges.outputs.parameters.should-build}} == 'true'"
+            when: "{{steps.detect-changes-step.outputs.parameters.should-build}} == 'true'"
     - name: detect-changes
       inputs:
         parameters:
