@@ -85,12 +85,12 @@ spec:
           echo "Between {{inputs.parameters.gitbefore}} and {{inputs.parameters.gitrevision}}"
           echo "Cloning repo {{inputs.parameters.gitrepo}}"
           RESULT_FILE="/tmp/should-build"
-          echo "Cloning repo ${repo}"
-          git clone "${repo}" repo >&2
+          echo "Cloning repo {{inputs.parameters.gitrepo}}"
+          git clone "{{inputs.parameters.gitrepo}}" repo >&2
           cd repo
           ZERO_SHA="0000000000000000000000000000000000000000"
-          TARGET="$(printf %s "${TARGET_RAW}" | tr -d '\r')"
-          BEFORE="$(printf %s "${BEFORE_RAW}" | tr -d '\r')"
+          TARGET="$(printf %s "{{inputs.parameters.gitrevision}}" | tr -d '\r')"
+          BEFORE="$(printf %s "{{inputs.parameters.gitbefore}}" | tr -d '\r')"
           if [ -z "$TARGET" ] || [ "$TARGET" = "$ZERO_SHA" ]; then
             TARGET="$(git rev-parse origin/HEAD)"
             echo "No target commit specified, using HEAD: $TARGET" >&2
