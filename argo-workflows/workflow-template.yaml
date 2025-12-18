@@ -55,8 +55,8 @@ spec:
                 - name: image_tag
                   value: "{{workflow.parameters.image_tag}}"
             when: "{{steps.detectchanges.outputs.result}} == true"
-        - - name: update_values
-            template: update_values
+        - - name: update-values
+            template: update-values
             arguments:
               parameters:
                 - name: git_repo
