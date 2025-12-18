@@ -10,21 +10,13 @@ spec:
       - name: gitrepo
       - name: gitrevision
       - name: gitbefore
-      - name: imagename
-      - name: imagetag
+      - name: image_name
+      - name: image_tag
       - name: watchpath
         value: apps/my-service/app
   entrypoint: main
   templates:
     - name: main
-      inputs:
-        parameters:
-          - name: gitrepo
-          - name: gitrevision
-          - name: gitbefore
-          - name: imagename
-          - name: imagetag
-          - name: watchpath
       steps:
         - - name: detectchanges
             template: detectchanges
@@ -36,12 +28,12 @@ spec:
                   value: "{{workflow.parameters.gitrevision}}"
                 - name: gitbefore
                   value: "{{workflow.parameters.gitbefore}}"
-                - name: imagename
-                  value: "{{workflow.parameters.imagename}}"
-                - name: imagetag
-                  value: "{{workflow.parameters.imagetag}}"
+                - name: image_name
+                  value: "{{workflow.parameters.image_name}}"
+                - name: image_tag
+                  value: "{{workflow.parameters.image_tag}}"
                 - name: watchpath
-                  value: "{{inputs.parameters.watchpath}}"
+                  value: "{{workflow.parameters.watchpath}}"
         - - name: build-image
             template: build-image
             arguments:
@@ -50,11 +42,11 @@ spec:
                   value: "{{workflow.parameters.gitrepo}}"
                 - name: gitrevision
                   value: "{{workflow.parameters.gitrevision}}"
-                - name: imagename
-                  value: "{{workflow.parameters.imagename}}"
-                - name: imagetag
-                  value: "{{workflow.parameters.imagetag}}"
-            when: "{{steps.detectchanges.outputs.result}} == 'true'"
+                - name: image_name
+                  value: "{{workflow.parameters.image_name}}"
+                - name: image_tag
+                  value: "{{workflow.parameters.image_tag}}"
+            when: "{{steps.detectchanges.outputs.parameters.should_build}} == 'true'"
         - - name: update-values
             template: update-values
             arguments:
@@ -65,80 +57,76 @@ spec:
                   value: "{{workflow.parameters.gitrevision}}"
                 - name: gitbefore
                   value: "{{workflow.parameters.gitbefore}}"
-                - name: imagename
-                  value: "{{workflow.parameters.imagename}}"
-                - name: imagetag
-                  value: "{{workflow.parameters.imagetag}}"
-            when: "{{steps.detectchanges.outputs.result}} == 'true'"
+                - name: image_name
+                  value: "{{workflow.parameters.image_name}}"
+                - name: image_tag
+                  value: "{{workflow.parameters.image_tag}}"
+            when: "{{steps.detectchanges.outputs.parameters.should_build}} == 'true'"
+
     - name: detectchanges
       inputs:
         parameters:
           - name: gitrepo
           - name: gitrevision
           - name: gitbefore
-          - name: imagename
-          - name: imagetag
+          - name: image_name
+          - name: image_tag
           - name: watchpath
-            value: apps/my-service/app
       script:
         image: alpine:3.19
         command: [sh]
         source: |
-          #set -euo pipefail
-          apk add --no-cache git
+          set -euo pipefail
+          apk add --no-cache git >/dev/null
           REPO="{{inputs.parameters.gitrepo}}"
           TARGET_RAW="{{inputs.parameters.gitrevision}}"
           BEFORE_RAW="{{inputs.parameters.gitbefore}}"
-          imagename="{{inputs.parameters.imagename}}"
-          imagenameTAG="{{inputs.parameters.imagetag}}"
           watchpath="{{inputs.parameters.watchpath}}"
+          RESULT_FILE="/tmp/should-build"
           echo "Cloning repo ${REPO}" >&2
-          echo "Using tag ${imagenameTAG}" >&2
-          echo "Watching path ${watchpath}" >&2
-          echo "Watching path ${watchpath}"
           git clone "${REPO}" repo >&2
           cd repo
           ZERO_SHA="0000000000000000000000000000000000000000"
-          TARGET="$(printf %s \"${TARGET_RAW}\" | tr -d '\r')"
-          BEFORE="$(printf %s \"${BEFORE_RAW}\" | tr -d '\r')"
-          echo "Fetched target revision: '$TARGET'" >&2
-          echo "Fetched before revision: '$BEFORE'" >&2 
+          TARGET="$(printf %s "${TARGET_RAW}" | tr -d '\r')"
+          BEFORE="$(printf %s "${BEFORE_RAW}" | tr -d '\r')"
           if [ -z "$TARGET" ] || [ "$TARGET" = "$ZERO_SHA" ]; then
             TARGET="$(git rev-parse origin/HEAD)"
             echo "No target commit specified, using HEAD: $TARGET" >&2
           else
             git fetch origin "$TARGET" >&2 || true
-            echo "Using specified target commit: $TARGET" >&2
           fi
-          echo "Target commit: $TARGET" >&2
-          echo "Before commit: $BEFORE" >&2
-          git fetch origin --tags >&2 || true
           git checkout "$TARGET" >&2 || true
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "$ZERO_SHA" ]; then
             if git rev-parse "${TARGET}^" >/dev/null 2>&1; then
               BEFORE="$(git rev-parse "${TARGET}^")"
-              echo "No prior commit specified, using parent: $BEFORE" >&2
+              echo "Using parent commit ${BEFORE}" >&2
             else
-              echo "No prior commit found, forcing build" >&2
-              printf true
+              echo "No prior commit, forcing build" >&2
+              printf true > "$RESULT_FILE"
               exit 0
             fi
           fi
-          echo git diff --name-only "$BEFORE" "$TARGET" >&2
-          if git diff --name-only "$BEFORE" "$TARGET" -- $watchpath | grep -q .; then
-            echo "Changes detected in $watchpath, proceeding with build." >&2
-            printf true
+          echo git diff --name-only "$BEFORE" "$TARGET" -- "$watchpath" >&2
+          if git diff --name-only "$BEFORE" "$TARGET" -- "$watchpath" | grep -q .; then
+            echo "Changes detected in $watchpath" >&2
+            printf true > "$RESULT_FILE"
           else
-            echo "No changes detected in $watchpath, skipping build." >&2
-            printf false
+            echo "No changes detected in $watchpath" >&2
+            printf false > "$RESULT_FILE"
           fi
+      outputs:
+        parameters:
+          - name: should_build
+            valueFrom:
+              path: /tmp/should-build
+
     - name: build-image
       inputs:
         parameters:
           - name: gitrepo
           - name: gitrevision
-          - name: imagename
-          - name: imagetag
+          - name: image_name
+          - name: image_tag
         artifacts:
           - name: source
             path: /workspace/src
@@ -150,7 +138,7 @@ spec:
         command: ["/kaniko/executor"]
         args:
           - "--context=dir:///workspace/src/apps/my-service"
-          - "--destination={{inputs.parameters.imagename}}:{{inputs.parameters.imagetag}}"
+          - "--destination={{inputs.parameters.image_name}}:{{inputs.parameters.image_tag}}"
           - "--dockerfile=Dockerfile"
           - "--snapshotMode=redo"
           - "--cleanup"
@@ -164,45 +152,41 @@ spec:
             items:
               - key: .dockerconfigjson
                 path: config.json
+
     - name: update-values
       inputs:
         parameters:
           - name: gitrepo
           - name: gitrevision
-          - name: imagename
-          - name: imagetag
+          - name: gitbefore
+          - name: image_name
+          - name: image_tag
       script:
         image: alpine:3.19
         command: [sh]
         source: |
           set -euo pipefail
-          apk add --no-cache git yq
+          apk add --no-cache git yq >/dev/null
           git clone "{{inputs.parameters.gitrepo}}" repo
           cd repo
           git checkout "{{inputs.parameters.gitrevision}}"
-          yq -i ".image.repository = \"{{inputs.parameters.imagename}}\"" apps/my-service/helm/values.yaml
-          yq -i ".image.tag = \"{{inputs.parameters.imagetag}}\"" apps/my-service/helm/values.yaml
-          # Ensure git identity is always set even if secrets are blank
+          yq -i ".image.repository = \"{{inputs.parameters.image_name}}\"" apps/my-service/helm/values.yaml
+          yq -i ".image.tag = \"{{inputs.parameters.image_tag}}\"" apps/my-service/helm/values.yaml
           git config user.name "${GITHUB_USER}"
           git config user.email "workflow@example.com"
-          git commit -am "[workflow] update rollout image to {{inputs.parameters.imagetag}}"
+          git commit -am "[workflow] update rollout image to {{inputs.parameters.image_tag}}"
           git remote set-url origin "https://${GITHUB_USER}:${GITHUB_TOKEN}@${GIT_REMOTE}"
           git push origin HEAD:main
-        env:
-          - name: GITHUB_USER
-            valueFrom:
-              secretKeyRef:
-                name: github-token
-                key: username
-          - name: GITHUB_EMAIL
-            valueFrom:
-              secretKeyRef:
-                name: github-token
-                key: email
-          - name: GITHUB_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: github-token
-                key: token
-          - name: GIT_REMOTE
-            value: ${GIT_REMOTE} 
+      env:
+        - name: GITHUB_USER
+          valueFrom:
+            secretKeyRef:
+              name: github-token
+              key: username
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-token
+              key: token
+        - name: GIT_REMOTE
+          value: ${GIT_REMOTE}
