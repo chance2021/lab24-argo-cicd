@@ -85,6 +85,7 @@ spec:
           WATCH_PATH="{{inputs.parameters.watch_path}}"
           echo "Cloning repo ${REPO}" >&2
           echo "Using tag ${IMAGE_NAMETAG}" >&2
+          echo "Watching path ${WATCH_PATH}" >&2
           git clone "${REPO}" repo >&2
           cd repo
           ZERO_SHA="0000000000000000000000000000000000000000"
