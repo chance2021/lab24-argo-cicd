@@ -5,14 +5,6 @@ metadata:
   namespace: cicd
 spec:
   serviceAccountName: workflow-runner
-  arguments:
-    parameters:
-      - name: git_repo
-      - name: git_revision
-      - name: git_before
-      - name: image_name     # e.g. ${GHCR_REPO}
-      - name: image_tag
-      - name: watch_path
   entrypoint: main
   arguments:
     parameters:
