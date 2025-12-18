@@ -73,7 +73,7 @@ spec:
           - name: imagetag
           - name: watchpath
       script:
-        image: busybox
+        image: alpine/git:latest
         command: [sh]
         source: |
           #set -euo pipefail
@@ -84,7 +84,6 @@ spec:
           echo "Detecting changes in {{inputs.parameters.watchpath}}"
           echo "Between {{inputs.parameters.gitbefore}} and {{inputs.parameters.gitrevision}}"
           echo "Cloning repo {{inputs.parameters.gitrepo}}"
-          apk add --no-cache git >/dev/null
           RESULT_FILE="/tmp/should-build"
           echo "Cloning repo ${REPO}" >&2
           git clone "${REPO}" repo >&2
