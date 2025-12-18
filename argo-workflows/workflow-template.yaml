@@ -32,7 +32,7 @@ spec:
                 - name: image_tag
                   value: "{{workflow.parameters.image_tag}}"
                 - name: watch_path
-                  value: testtest
+                  value: "{{workflow.parameters.watch_path}}"
         - - name: build-image
             template: build-image
             arguments:
