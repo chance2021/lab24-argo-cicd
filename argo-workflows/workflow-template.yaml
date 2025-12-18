@@ -14,7 +14,6 @@ spec:
       - name: image_name
       - name: image_tag
       - name: watch_path
-        default: apps/my-service/app
   templates:
     - name: main
       steps:
@@ -71,7 +70,7 @@ spec:
           - name: image_name
           - name: image_tag
           - name: watch_path
-            value: testtest
+            default: testtest
       script:
         image: alpine:3.19
         command: [sh]
