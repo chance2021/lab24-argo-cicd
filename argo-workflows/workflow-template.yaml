@@ -62,11 +62,6 @@ spec:
                 - name: image_tag
                   value: "{{workflow.parameters.image_tag}}"
             when: "{{steps.detectchanges.outputs.result}} == true"
-      outputs:
-        parameters:
-          - name: detectchanges
-            valueFrom:
-            stepOutput: "{{steps.detectchanges.outputs.result}}"
     - name: detectchanges
       inputs:
         parameters:
