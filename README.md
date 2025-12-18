@@ -192,22 +192,35 @@ metadata:
   namespace: cicd
 spec:
   serviceAccountName: workflow-runner
+  arguments:
+    parameters:
+      - name: git_repo
+      - name: git_revision
+      - name: git_before
+      - name: watch_path
+        value: apps/my-service/app
   entrypoint: main
   templates:
     - name: main
+      inputs:
+        parameters:
+          - name: git_repo
+          - name: git_revision
+          - name: git_before
+          - name: watch_path
       steps:
         - - name: detectchanges
             template: detectchanges
             arguments:
               parameters:
                 - name: git_repo
-                  value: "{{workflow.parameters.git_repo}}"
+                  value: "{{inputs.parameters.git_repo}}"
                 - name: git_revision
-                  value: "{{workflow.parameters.git_revision}}"
+                  value: "{{inputs.parameters.git_revision}}"
                 - name: git_before
-                  value: "{{workflow.parameters.git_before}}"
+                  value: "{{inputs.parameters.git_before}}"
                 - name: watch_path
-                  value: "{{workflow.parameters.watch_path}}"
+                  value: "{{inputs.parameters.watch_path}}"
         - - name: build_image
             template: build_image
             when: "{{steps.detectchanges.outputs.result}} == 'true'"
@@ -232,6 +245,7 @@ spec:
           ZERO_SHA="0000000000000000000000000000000000000000"
           TARGET="$(printf %s \"{{inputs.parameters.git_revision}}\" | tr -d '\r')"
           BEFORE="$(printf %s \"{{inputs.parameters.git_before}}\" | tr -d '\r')"
+          WATCH_PATH="{{inputs.parameters.watch_path}}"
           git fetch origin --tags >&2 || true
           if [ -z "$TARGET" ] || [ "$TARGET" = "$ZERO_SHA" ]; then
             TARGET="$(git rev-parse origin/HEAD)"
@@ -247,7 +261,7 @@ spec:
               exit 0
             fi
           fi
-          if git diff --name-only "$BEFORE" "$TARGET" -- apps/my-service/app | grep -q .; then
+          if git diff --name-only "$BEFORE" "$TARGET" -- "$WATCH_PATH" | grep -q .; then
             printf true
           else
             printf false

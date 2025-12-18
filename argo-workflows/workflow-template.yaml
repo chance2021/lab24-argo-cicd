@@ -5,7 +5,6 @@ metadata:
   namespace: cicd
 spec:
   serviceAccountName: workflow-runner
-  entrypoint: main
   arguments:
     parameters:
       - name: git_repo
@@ -15,53 +14,63 @@ spec:
       - name: image_tag
       - name: watch_path
         value: apps/my-service/app
+  entrypoint: main
   templates:
     - name: main
+      inputs:
+        parameters:
+          - name: git_repo
+          - name: git_revision
+          - name: git_before
+          - name: image_name
+          - name: image_tag
+          - name: watch_path
+            value: apps/my-service/app
       steps:
         - - name: detectchanges
             template: detectchanges
             arguments:
               parameters:
                 - name: git_repo
-                  value: "{{workflow.parameters.git_repo}}"
+                  value: "{{inputs.parameters.git_repo}}"
                 - name: git_revision
-                  value: "{{workflow.parameters.git_revision}}"
+                  value: "{{inputs.parameters.git_revision}}"
                 - name: git_before
-                  value: "{{workflow.parameters.git_before}}"
+                  value: "{{inputs.parameters.git_before}}"
                 - name: image_name
-                  value: "{{workflow.parameters.image_name}}"
+                  value: "{{inputs.parameters.image_name}}"
                 - name: image_tag
-                  value: "{{workflow.parameters.image_tag}}"
+                  value: "{{inputs.parameters.image_tag}}"
                 - name: watch_path
-                  value: "{{workflow.parameters.watch_path}}"
+                  value: "{{inputs.parameters.watch_path}}"
         - - name: build-image
             template: build-image
             arguments:
               parameters:
                 - name: git_repo
-                  value: "{{workflow.parameters.git_repo}}"
+                  value: "{{inputs.parameters.git_repo}}"
                 - name: git_revision
-                  value: "{{workflow.parameters.git_revision}}"
+                  value: "{{inputs.parameters.git_revision}}"
                 - name: image_name
-                  value: "{{workflow.parameters.image_name}}"
+                  value: "{{inputs.parameters.image_name}}"
                 - name: image_tag
-                  value: "{{workflow.parameters.image_tag}}"
+                  value: "{{inputs.parameters.image_tag}}"
             when: "{{steps.detectchanges.outputs.result}} == 'true'"
         - - name: update-values
             template: update-values
             arguments:
               parameters:
                 - name: git_repo
-                  value: "{{workflow.parameters.git_repo}}"
+                  value: "{{inputs.parameters.git_repo}}"
                 - name: git_revision
-                  value: "{{workflow.parameters.git_revision}}"
+                  value: "{{inputs.parameters.git_revision}}"
                 - name: git_before
-                  value: "{{workflow.parameters.git_before}}"
+                  value: "{{inputs.parameters.git_before}}"
                 - name: image_name
-                  value: "{{workflow.parameters.image_name}}"
+                  value: "{{inputs.parameters.image_name}}"
                 - name: image_tag
-                  value: "{{workflow.parameters.image_tag}}"
-            when: "{{steps.detectchanges.outputs.result}} == true"
+                  value: "{{inputs.parameters.image_tag}}"
+            when: "{{steps.detectchanges.outputs.result}} == 'true'"
     - name: detectchanges
       inputs:
         parameters:
@@ -83,7 +92,7 @@ spec:
           BEFORE_RAW="{{inputs.parameters.git_before}}"
           IMAGE_NAME="{{inputs.parameters.image_name}}"
           IMAGE_NAMETAG="{{inputs.parameters.image_tag}}"
-          WATCH_PATH="{{workflow.parameters.watch_path}}"
+          WATCH_PATH="{{inputs.parameters.watch_path}}"
           echo "Cloning repo ${REPO}" >&2
           echo "Using tag ${IMAGE_NAMETAG}" >&2
           echo "Watching path ${WATCH_PATH}" >&2
