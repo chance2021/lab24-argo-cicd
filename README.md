@@ -200,14 +200,14 @@ spec:
             template: detectchanges
             arguments:
               parameters:
-                - name: git_repo
-                  value: "{{workflow.parameters.git_repo}}"
-                - name: git_revision
-                  value: "{{workflow.parameters.git_revision}}"
-                - name: git_before
-                  value: "{{workflow.parameters.git_before}}"
-                - name: watch_path
-                  value: "{{workflow.parameters.watch_path}}"
+                - name: gitrepo
+                  value: "{{workflow.parameters.gitrepo}}"
+                - name: gitrevision
+                  value: "{{workflow.parameters.gitrevision}}"
+                - name: gitbefore
+                  value: "{{workflow.parameters.gitbefore}}"
+                - name: watchpath
+                  value: "{{workflow.parameters.watchpath}}"
         - - name: build_image
             template: build_image
             when: "{{steps.detectchanges.outputs.result}} == 'true'"
@@ -217,22 +217,22 @@ spec:
     - name: detectchanges
       inputs:
         parameters:
-          - name: git_repo
-          - name: git_revision
-          - name: git_before
-          - name: watch_path
+          - name: gitrepo
+          - name: gitrevision
+          - name: gitbefore
+          - name: watchpath
       script:
         image: alpine:3.19
         command: [sh]
         source: |
           set -euo pipefail
           apk add --no-cache git
-          git clone "{{inputs.parameters.git_repo}}" repo >&2
+          git clone "{{inputs.parameters.gitrepo}}" repo >&2
           cd repo
           ZERO_SHA="0000000000000000000000000000000000000000"
-          TARGET="$(printf %s \"{{inputs.parameters.git_revision}}\" | tr -d '\r')"
-          BEFORE="$(printf %s \"{{inputs.parameters.git_before}}\" | tr -d '\r')"
-          WATCH_PATH="{{inputs.parameters.watch_path}}"
+          TARGET="$(printf %s \"{{inputs.parameters.gitrevision}}\" | tr -d '\r')"
+          BEFORE="$(printf %s \"{{inputs.parameters.gitbefore}}\" | tr -d '\r')"
+          watchpath="{{inputs.parameters.watchpath}}"
           git fetch origin --tags >&2 || true
           if [ -z "$TARGET" ] || [ "$TARGET" = "$ZERO_SHA" ]; then
             TARGET="$(git rev-parse origin/HEAD)"
@@ -248,7 +248,7 @@ spec:
               exit 0
             fi
           fi
-          if git diff --name-only "$BEFORE" "$TARGET" -- "$WATCH_PATH" | grep -q .; then
+          if git diff --name-only "$BEFORE" "$TARGET" -- "$watchpath" | grep -q .; then
             printf true
           else
             printf false
@@ -256,21 +256,21 @@ spec:
     - name: build_image
       inputs:
         parameters:
-          - name: git_repo
-          - name: git_revision
-          - name: image_name
-          - name: image_tag
+          - name: gitrepo
+          - name: gitrevision
+          - name: imagename
+          - name: imagetag
         artifacts:
           - name: source
             path: /workspace/src
             git:
-              repo: "{{inputs.parameters.git_repo}}"
-              revision: "{{inputs.parameters.git_revision}}"
+              repo: "{{inputs.parameters.gitrepo}}"
+              revision: "{{inputs.parameters.gitrevision}}"
       container:
         image: gcr.io/kaniko-project/executor:v1.16.0
         args:
           - "--context=dir:///workspace/src/apps/my-service"
-          - "--destination={{inputs.parameters.image_name}}:{{inputs.parameters.image_tag}}"
+          - "--destination={{inputs.parameters.imagename}}:{{inputs.parameters.imagetag}}"
           - "--dockerfile=Dockerfile"
           - "--snapshotMode=redo"
           - "--cleanup"
@@ -287,25 +287,25 @@ spec:
     - name: update_values
       inputs:
         parameters:
-          - name: git_repo
-          - name: git_revision
-          - name: image_name
-          - name: image_tag
+          - name: gitrepo
+          - name: gitrevision
+          - name: imagename
+          - name: imagetag
       script:
         image: alpine:3.19
         command: [sh]
         source: |
           set -euo pipefail
           apk add --no-cache git yq
-          git clone "{{inputs.parameters.git_repo}}" repo
+          git clone "{{inputs.parameters.gitrepo}}" repo
           cd repo
-          git checkout "{{inputs.parameters.git_revision}}"
-          yq -i ".image.repository = \"{{inputs.parameters.image_name}}\"" apps/my-service/helm/values.yaml
-          yq -i ".image.tag = \"{{inputs.parameters.image_tag}}\"" apps/my-service/helm/values.yaml
+          git checkout "{{inputs.parameters.gitrevision}}"
+          yq -i ".image.repository = \"{{inputs.parameters.imagename}}\"" apps/my-service/helm/values.yaml
+          yq -i ".image.tag = \"{{inputs.parameters.imagetag}}\"" apps/my-service/helm/values.yaml
           # Ensure git identity is always set even if secrets are blank
           git config user.name "${GITHUB_USER}"
           git config user.email "${GITHUB_EMAIL}"
-          git commit -am "[workflow] update rollout image to {{inputs.parameters.image_tag}}"
+          git commit -am "[workflow] update rollout image to {{inputs.parameters.imagetag}}"
           git remote set-url origin "https://${GITHUB_USER}:${GITHUB_TOKEN}@${GIT_REMOTE}"
           git push origin HEAD:main
         env:
@@ -355,7 +355,7 @@ The repo now includes `argo-events/event-source.yaml`, `argo-events/smee-relay-d
    docker push "$SMEE_RELAY_IMAGE"
    ```
    > Publish the repository (e.g., `ghcr.io/chance2021/smee-relay:latest`) as **public** in GitHub Packages so your cluster can pull it without extra credentials and your local builds can `docker pull` it for verification.
-4. Edit `argo-events/smee-relay-deployment.yaml` so the image reference matches `$SMEE_RELAY_IMAGE` (and adjust the secret name if needed). Update `argo-events/sensor.yaml` so the hard-coded `git_repo` parameter points at your fork (e.g., `https://github.com/${GITHUB_USER}/lab24-argo-cicd.git`) and the `image_name` parameter matches your `$GHCR_REPO` value if it still points at the example repo.
+4. Edit `argo-events/smee-relay-deployment.yaml` so the image reference matches `$SMEE_RELAY_IMAGE` (and adjust the secret name if needed). Update `argo-events/sensor.yaml` so the hard-coded `gitrepo` parameter points at your fork (e.g., `https://github.com/${GITHUB_USER}/lab24-argo-cicd.git`) and the `imagename` parameter matches your `$GHCR_REPO` value if it still points at the example repo.
 5. Grant the Argo Events service account permission to submit workflows in `cicd`:
    ```bash
    kubectl apply -f argo-events/workflow-trigger-rbac.yaml

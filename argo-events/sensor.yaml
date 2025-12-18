@@ -36,12 +36,12 @@ spec:
                   name: git-build-push
                 arguments:
                   parameters:
-                    - name: git_repo
-                    - name: git_revision
-                    - name: git_before
-                    - name: image_name
-                    - name: image_tag
-                    - name: watch_path
+                    - name: gitrepo
+                    - name: gitrevision
+                    - name: gitbefore
+                    - name: imagename
+                    - name: imagetag
+                    - name: watchpath
                       value: apps/my-service/app
           parameters:
             - src:
