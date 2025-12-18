@@ -77,7 +77,7 @@ spec:
         command: [sh]
         source: |
           #set -euo pipefail
-          REPO={{inputs.parameters.gitrepo}}
+          REPO="{{inputs.parameters.gitrepo}}"
           TARGET_RAW="{{inputs.parameters.gitrevision}}"
           BEFORE_RAW="{{inputs.parameters.gitbefore}}"
           watchpath="{{inputs.parameters.watchpath}}"
