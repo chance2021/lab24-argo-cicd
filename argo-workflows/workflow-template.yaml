@@ -13,11 +13,18 @@ spec:
       - name: image_name
       - name: image_tag
       - name: watch_path
-        value: "{{workflow.parameters.watch_path}}"
         value: apps/my-service/app
   entrypoint: main
   templates:
     - name: main
+      inputs:
+        parameters:
+          - name: git_repo
+          - name: git_revision
+          - name: git_before
+          - name: image_name
+          - name: image_tag
+          - name: watch_path
       steps:
         - - name: detectchanges
             template: detectchanges
@@ -34,6 +41,7 @@ spec:
                 - name: image_tag
                   value: "{{workflow.parameters.image_tag}}"
                 - name: watch_path
+                  value: "{{inputs.parameters.watch_path}}"
         - - name: build-image
             template: build-image
             arguments:
