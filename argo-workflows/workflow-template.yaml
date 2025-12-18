@@ -77,15 +77,10 @@ spec:
         command: [sh]
         source: |
           #set -euo pipefail
-          repo="{{inputs.parameters.gitrepo}}"
-          TARGET_RAW="{{inputs.parameters.gitrevision}}"
-          BEFORE_RAW="{{inputs.parameters.gitbefore}}"
-          watchpath="{{inputs.parameters.watchpath}}"
           echo "Detecting changes in {{inputs.parameters.watchpath}}"
           echo "Between {{inputs.parameters.gitbefore}} and {{inputs.parameters.gitrevision}}"
           echo "Cloning repo {{inputs.parameters.gitrepo}}"
           RESULT_FILE="/tmp/should-build"
-          echo "Cloning repo {{inputs.parameters.gitrepo}}"
           git clone "{{inputs.parameters.gitrepo}}" repo >&2
           cd repo
           ZERO_SHA="0000000000000000000000000000000000000000"
@@ -108,12 +103,12 @@ spec:
               exit 0
             fi
           fi
-          echo git diff --name-only "$BEFORE" "$TARGET" -- "$watchpath" >&2
-          if git diff --name-only "$BEFORE" "$TARGET" -- "$watchpath" | grep -q .; then
-            echo "Changes detected in $watchpath" >&2
+          echo git diff --name-only "$BEFORE" "$TARGET" -- "{{inputs.parameters.watchpath}}" >&2
+          if git diff --name-only "$BEFORE" "$TARGET" -- "{{inputs.parameters.watchpath}}" | grep -q .; then
+            echo "Changes detected in {{inputs.parameters.watchpath}}" >&2
             printf true > "$RESULT_FILE"
           else
-            echo "No changes detected in $watchpath" >&2
+            echo "No changes detected in {{inputs.parameters.watchpath}}" >&2
             printf false > "$RESULT_FILE"
           fi
       outputs:
