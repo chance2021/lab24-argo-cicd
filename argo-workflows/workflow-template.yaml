@@ -84,11 +84,13 @@ spec:
           git clone "{{inputs.parameters.gitrepo}}" repo >&2
           cd repo
           ZERO_SHA="0000000000000000000000000000000000000000"
-          TARGET="$(printf %s "{{inputs.parameters.gitrevision}}" | tr -d '\r')"
-          BEFORE="$(printf %s "{{inputs.parameters.gitbefore}}" | tr -d '\r')"
+          TARGET_INPUT="{{inputs.parameters.gitrevision}}"
+          BEFORE_INPUT="{{inputs.parameters.gitbefore}}"
+          TARGET="$(printf %s "$TARGET_INPUT" | tr -d '\r')"
+          BEFORE="$(printf %s "$BEFORE_INPUT" | tr -d '\r')"
           if [ -z "$TARGET" ] || [ "$TARGET" = "$ZERO_SHA" ]; then
-            TARGET="$(git rev-parse origin/HEAD)"
-            echo "No target commit specified, using HEAD: $TARGET" >&2
+            TARGET="$(git rev-parse HEAD)"
+            echo "No target commit specified, using local HEAD: $TARGET" >&2
           else
             git fetch origin "$TARGET" >&2 || true
           fi
