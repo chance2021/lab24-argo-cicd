@@ -292,6 +292,17 @@ spec:
       script:
         image: alpine:3.19
         command: [sh]
+        env:
+          - name: GITHUB_USER
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: username
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: token
         source: |
           set -euo pipefail
           apk add --no-cache git yq
@@ -308,17 +319,6 @@ spec:
           REMOTE_HOST_PATH="${REMOTE_URL#https://}"
           git remote set-url origin "https://${GITHUB_USER}:${GITHUB_TOKEN}@${REMOTE_HOST_PATH}"
           git push origin HEAD:main
-        env:
-          - name: GITHUB_USER
-            valueFrom:
-              secretKeyRef:
-                name: github-token
-                key: username
-          - name: GITHUB_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: github-token
-                key: token
 ```
 
 > The template assumes you always push to `main`. Use Workflow parameters if you need branch-specific behavior, and keep automation credentials exclusively in Kubernetes secrets (the workflow never needs pre-rendered `${...}` placeholders).
