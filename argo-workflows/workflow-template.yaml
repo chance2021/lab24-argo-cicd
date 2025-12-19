@@ -88,6 +88,10 @@ spec:
           BEFORE_INPUT="{{inputs.parameters.gitbefore}}"
           TARGET="$(printf %s "$TARGET_INPUT" | tr -d '\r')"
           BEFORE="$(printf %s "$BEFORE_INPUT" | tr -d '\r')"
+          echo "Target input: $TARGET_INPUT" >&2
+          echo "Before input: $BEFORE_INPUT" >&2
+          echo "Target commit: $TARGET" >&2
+          echo "Before commit: $BEFORE" >&2
           if [ -z "$TARGET" ] || [ "$TARGET" = "$ZERO_SHA" ]; then
             TARGET="$(git rev-parse HEAD)"
             echo "No target commit specified, using local HEAD: $TARGET" >&2
